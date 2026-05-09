@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+groq
+spacy
+networkx
+pydantic
+python-dotenv
+thefuzz
+python-levenshtein

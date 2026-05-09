@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>RippleIQ — Causal Sonar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
+<script src="https://unpkg.com/cytoscape@3.26.0/dist/cytoscape.min.js"></script>
+<script src="https://unpkg.com/dagre@0.8.5/dist/dagre.min.js"></script>
+<script src="https://unpkg.com/cytoscape-dagre@2.5.0/cytoscape-dagre.js"></script>
+<style>
+:root {
+  --bg-deep:   #050510;
+  --bg-base:   #07071a;
+  --bg-rise:   #0d0d22;
+  --grid:      rgba(120, 130, 200, 0.06);
+  --grid-bold: rgba(120, 130, 200, 0.10);
+  --hair:      rgba(255, 255, 255, 0.07);
+  --hair-2:    rgba(255, 255, 255, 0.13);
+  --hair-3:    rgba(255, 255, 255, 0.22);
+  --ink-1: #f4f5fb;
+  --ink-2: #c8ccdc;
+  --ink-3: #8b90a8;
+  --ink-4: #5d6383;
+  --ink-5: #3a3f5a;
+  --indigo: #6366f1;
+  --indigo-2: #818cf8;
+  --cyan: #22d3ee;
+  --cyan-deep: #0891b2;
+  --lime:  #a3e635;
+  --d-root:        #6366f1;
+  --d-agriculture: #059669;
+  --d-economics:   #2563eb;
+  --d-energy:      #d97706;
+  --d-finance:     #7c3aed;
+  --d-geopolitics: #dc2626;
+  --d-health:      #db2777;
+  --d-technology:  #0891b2;
+  --d-labor:       #ea580c;
+  --font-sans: 'Inter', -apple-system, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+  --font-serif: 'Instrument Serif', 'Times New Roman', serif;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; height: 100%; background: var(--bg-deep); color: var(--ink-1); font-family: var(--font-sans); overflow: hidden; -webkit-font-smoothing: antialiased; }
+button, input, textarea { font-family: inherit; color: inherit; border: none; background: none; }
+button { cursor: pointer; }
+::selection { background: rgba(99,102,241,0.4); }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.10); border-radius: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+
+.shell {
+  position: fixed; inset: 0;
+  background:
+    radial-gradient(1200px 800px at 50% 50%, rgba(99,102,241,0.10), transparent 60%),
+    radial-gradient(900px 600px at 100% 0%, rgba(34,211,238,0.06), transparent 60%),
+    var(--bg-deep);
+  overflow: hidden;
+}
+.shell::before {
+  content: "";
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.012) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.012) 1px, transparent 1px);
+  background-size: 32px 32px, 32px 32px;
+  pointer-events: none; z-index: 1;
+}
+.shell::after {
+  content: "";
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(0deg, rgba(255,255,255,0.014) 0 1px, transparent 1px 3px);
+  pointer-events: none; mix-blend-mode: overlay; z-index: 1;
+}
+
+/* TOP BAR */
+.topbar {
+  position: absolute; top: 0; left: 0; right: 0; height: 52px;
+  z-index: 30;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 22px;
+}
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 15px; letter-spacing: -0.01em; }
+.brand .mark {
+  position: relative; width: 24px; height: 24px; border-radius: 7px;
+  background: linear-gradient(135deg, #6366f1, #22d3ee);
+  display: grid; place-items: center;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.10), 0 6px 18px rgba(99,102,241,0.45);
+  animation: markPulse 3.6s ease-in-out infinite;
+}
+.brand .mark svg { width: 14px; height: 14px; }
+@keyframes markPulse {
+  0%, 100% { box-shadow: 0 0 0 1px rgba(255,255,255,0.10), 0 6px 18px rgba(99,102,241,0.35); }
+  50%       { box-shadow: 0 0 0 1px rgba(255,255,255,0.15), 0 8px 28px rgba(99,102,241,0.65); }
+}
+.brand .name {
+  background: linear-gradient(90deg,#fff 0%,#c7cad8 60%,#818cf8 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.brand .sub {
+  margin-left: 10px; padding-left: 12px; border-left: 1px solid var(--hair);
+  font-family: var(--font-serif); font-style: italic; font-size: 14px;
+  color: var(--ink-3); font-weight: 400;
+}
+.topmeta { display: flex; align-items: center; gap: 14px; font-size: 11.5px; color: var(--ink-3); font-family: var(--font-mono); }
+.topmeta .pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 3px 9px; height: 22px; border-radius: 5px;
+  border: 1px solid var(--hair-2); background: rgba(255,255,255,0.02);
+}
+.dot-live {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--lime);
+  box-shadow: 0 0 0 0 rgba(163,230,53,0.6);
+  animation: livePulse 2.2s ease-out infinite;
+}
+@keyframes livePulse {
+  0%  { box-shadow: 0 0 0 0 rgba(163,230,53,0.6); }
+  70% { box-shadow: 0 0 0 7px rgba(163,230,53,0); }
+  100%{ box-shadow: 0 0 0 0 rgba(163,230,53,0); }
+}
+
+/* COMMAND TRIGGER */
+.cmd-trigger {
+  position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
+  z-index: 30;
+  display: flex; align-items: center; gap: 12px;
+  height: 36px; padding: 0 6px 0 14px; border-radius: 10px;
+  background: rgba(13,13,34,0.78);
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  border: 1px solid var(--hair-2);
+  box-shadow: 0 14px 40px rgba(0,0,0,0.55), 0 1px 0 rgba(255,255,255,0.05) inset;
+  font-size: 12.5px; color: var(--ink-2);
+  transition: border-color .18s ease, box-shadow .18s ease;
+  min-width: 380px;
+}
+.cmd-trigger:hover { border-color: rgba(129,140,248,0.45); box-shadow: 0 14px 40px rgba(0,0,0,0.55), 0 0 24px rgba(99,102,241,0.18); }
+.cmd-trigger .ic { width: 14px; height: 14px; color: var(--ink-3); }
+.cmd-trigger .placeholder { flex: 1; text-align: left; color: var(--ink-3); }
+.cmd-trigger .placeholder b { color: var(--ink-2); font-weight: 500; }
+.cmd-trigger .kbd { font-family: var(--font-mono); font-size: 10.5px; font-weight: 500; padding: 3px 7px; border-radius: 5px; background: rgba(255,255,255,0.04); border: 1px solid var(--hair-2); color: var(--ink-2); }
+
+/* LEFT INSTRUMENT STRIP */
+.instrument {
+  position: absolute; left: 22px; top: 80px; bottom: 210px;
+  width: 220px; z-index: 12;
+  display: flex; flex-direction: column; gap: 22px;
+  pointer-events: none;
+}
+.instrument > * { pointer-events: auto; }
+.section-overline {
+  font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--ink-4); font-weight: 600;
+  display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+}
+.section-overline::before { content: ""; width: 12px; height: 1px; background: var(--hair-2); }
+.section-overline::after  { content: ""; flex: 1; height: 1px; background: var(--hair); }
+.event-display { font-size: 13.5px; line-height: 1.55; color: var(--ink-2); font-weight: 400; margin-bottom: 12px; }
+.event-display .quote-mark { display: inline-block; width: 4px; height: 14px; background: var(--indigo-2); border-radius: 2px; margin-right: 8px; vertical-align: -2px; box-shadow: 0 0 8px rgba(129,140,248,0.55); }
+.event-meta { font-family: var(--font-mono); font-size: 10.5px; color: var(--ink-3); display: flex; flex-direction: column; gap: 5px; }
+.event-meta .row { display: flex; justify-content: space-between; gap: 12px; padding: 3px 0; border-bottom: 1px solid var(--hair); }
+.event-meta .row:last-child { border-bottom: none; }
+.event-meta .k { color: var(--ink-4); }
+.event-meta .v { color: var(--ink-1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 120px; }
+.readouts { display: flex; flex-direction: column; gap: 14px; }
+.readout { display: flex; align-items: baseline; gap: 10px; }
+.readout .num { font-family: var(--font-mono); font-weight: 600; font-size: 30px; line-height: 1; color: var(--ink-1); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; min-width: 48px; }
+.readout .num .unit { font-size: 14px; color: var(--ink-3); margin-left: 2px; }
+.readout .lbl { font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-4); font-weight: 600; }
+.readout .lbl small { display: block; font-family: var(--font-mono); font-size: 9.5px; letter-spacing: 0.04em; text-transform: none; color: var(--ink-4); margin-top: 2px; font-weight: 400; }
+
+/* SONAR */
+.sonar { position: absolute; inset: 0; z-index: 5; pointer-events: none; }
+.sonar-rings, #cy { position: absolute; inset: 0; }
+.sonar-rings { z-index: 1; }
+#cy { z-index: 2; pointer-events: auto; }
+.sonar-rings svg { width: 100%; height: 100%; display: block; }
+.world-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: brightness(0) saturate(100%) invert(48%) sepia(58%) saturate(2200%) hue-rotate(225deg) brightness(95%) contrast(95%); opacity: 0.32; pointer-events: none; -webkit-mask-image: radial-gradient(ellipse at center, #000 55%, transparent 95%); mask-image: radial-gradient(ellipse at center, #000 55%, transparent 95%); }
+.geo-grid line { stroke: rgba(120,130,200,0.05); stroke-width: 0.5; }
+.geo-grid line.major { stroke: rgba(120,130,200,0.10); }
+.continent { fill: url(#dotPattern); stroke: rgba(129,140,248,0.32); stroke-width: 0.6; stroke-dasharray: 2 2; filter: drop-shadow(0 0 6px rgba(99,102,241,0.18)); }
+.scanbar { fill: url(#scanGrad); opacity: 0.7; animation: scanH 7s linear infinite; }
+@keyframes scanH { from { transform: translateX(-30%); } to { transform: translateX(130%); } }
+.coord-label { font-family: var(--font-mono); font-size: 9px; fill: var(--ink-5); letter-spacing: 0.10em; }
+.crosshair { stroke: rgba(120,130,200,0.10); stroke-width: 0.8; stroke-dasharray: 4 4; }
+
+/* BOTTOM RIBBON */
+.ribbon {
+  position: absolute; left: 22px; right: 22px; bottom: 22px;
+  z-index: 12; max-height: 200px;
+  background: rgba(13,13,34,0.72);
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  border: 1px solid var(--hair-2); border-radius: 14px;
+  padding: 12px 16px 14px;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.55), 0 1px 0 rgba(255,255,255,0.05) inset;
+  display: flex; flex-direction: column;
+}
+.ribbon-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.ribbon-title { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-3); display: flex; align-items: center; gap: 10px; }
+.ribbon-title b { color: var(--ink-1); font-weight: 600; }
+.ribbon-meta { font-family: var(--font-mono); font-size: 10.5px; color: var(--ink-4); }
+.ribbon-track { position: relative; display: flex; gap: 8px; align-items: stretch; overflow-x: auto; overflow-y: hidden; padding-bottom: 4px; flex: 1; min-height: 0; }
+.ribbon-col { flex: 1 1 0; min-width: 160px; max-height: 130px; display: flex; flex-direction: column; gap: 5px; justify-content: center; position: relative; padding-top: 18px; overflow-y: auto; overflow-x: hidden; }
+.ribbon-col::before { content: attr(data-hop); position: absolute; top: 0; left: 0; font-family: var(--font-mono); font-size: 9.5px; color: var(--ink-4); letter-spacing: 0.12em; text-transform: uppercase; }
+.ribbon-col::after { content: ""; position: absolute; top: 12px; right: -6px; width: 12px; height: 1px; background: linear-gradient(90deg, var(--hair-2), transparent); }
+.ribbon-col:last-child::after { display: none; }
+.ribbon-col--multi { justify-content: flex-start; }
+.ripple-chip { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; background: rgba(255,255,255,0.025); border: 1px solid var(--hair-2); cursor: pointer; transition: background .14s ease, border-color .14s ease; opacity: 0; transform: translateY(6px); animation: chipIn .35s ease forwards; }
+@keyframes chipIn { to { opacity: 1; transform: translateY(0); } }
+.ripple-chip:hover { background: rgba(255,255,255,0.05); border-color: var(--hair-3); }
+.ripple-chip.active { background: rgba(99,102,241,0.13); border-color: rgba(99,102,241,0.45); }
+.ripple-chip .swatch { width: 6px; height: 26px; border-radius: 3px; flex-shrink: 0; }
+.ripple-chip .body { flex: 1; min-width: 0; }
+.ripple-chip .lbl { font-size: 12px; font-weight: 500; color: var(--ink-1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ripple-chip .meta { font-family: var(--font-mono); font-size: 9.5px; color: var(--ink-4); margin-top: 2px; }
+.ripple-chip .pct { font-family: var(--font-mono); font-size: 11px; font-weight: 600; color: var(--ink-1); font-variant-numeric: tabular-nums; }
+
+/* RIGHT INSPECTOR */
+.inspector {
+  position: absolute; top: 80px; right: 22px; width: 320px; z-index: 14;
+  background: rgba(13,13,34,0.82);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border: 1px solid var(--hair-2); border-radius: 14px;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.6), 0 1px 0 rgba(255,255,255,0.05) inset;
+  overflow: hidden;
+  transform: translateX(calc(100% + 30px)); opacity: 0;
+  transition: transform .35s cubic-bezier(0.16,1,0.3,1), opacity .25s ease;
+}
+.inspector.open { transform: translateX(0); opacity: 1; }
+.insp-head { padding: 14px 16px 10px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--hair); }
+.insp-head .swatch { width: 6px; height: 28px; border-radius: 3px; }
+.insp-head .titles { flex: 1; min-width: 0; }
+.insp-head .titles .t1 { font-size: 14px; font-weight: 600; letter-spacing: -0.01em; color: var(--ink-1); }
+.insp-head .titles .t2 { font-family: var(--font-mono); font-size: 10.5px; color: var(--ink-3); margin-top: 2px; }
+.insp-head .close { width: 24px; height: 24px; border-radius: 6px; color: var(--ink-3); display: grid; place-items: center; transition: background .14s ease, color .14s ease; }
+.insp-head .close:hover { background: rgba(255,255,255,0.06); color: var(--ink-1); }
+.insp-head .close svg { width: 12px; height: 12px; }
+.insp-body { padding: 14px 16px 16px; }
+.insp-meter { font-family: var(--font-mono); font-size: 10px; color: var(--ink-4); letter-spacing: 0.10em; text-transform: uppercase; margin-bottom: 6px; display: flex; justify-content: space-between; }
+.insp-meter b { color: var(--ink-1); font-weight: 600; font-variant-numeric: tabular-nums; }
+.meter-bar { height: 4px; border-radius: 999px; background: rgba(255,255,255,0.06); overflow: hidden; margin-bottom: 14px; }
+.meter-bar i { display: block; height: 100%; background: linear-gradient(90deg, #6366f1, #22d3ee); border-radius: inherit; }
+.insp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.insp-cell { background: rgba(255,255,255,0.025); border: 1px solid var(--hair); border-radius: 8px; padding: 10px 11px; }
+.insp-cell .k { font-size: 10px; color: var(--ink-4); letter-spacing: 0.10em; text-transform: uppercase; font-weight: 600; margin-bottom: 4px; }
+.insp-cell .v { font-family: var(--font-mono); font-size: 14px; font-weight: 600; color: var(--ink-1); font-variant-numeric: tabular-nums; }
+.insp-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 12px; }
+.insp-tag { font-size: 10.5px; color: var(--ink-2); padding: 3px 8px; height: 22px; display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; background: rgba(255,255,255,0.03); border: 1px solid var(--hair-2); }
+.insp-tag .dot { width: 5px; height: 5px; border-radius: 50%; }
+
+/* COMMAND PALETTE MODAL */
+.modal-veil { position: absolute; inset: 0; background: rgba(5,5,16,0.65); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 80; display: none; align-items: flex-start; justify-content: center; padding-top: 12vh; }
+.modal-veil.open { display: flex; }
+.modal { width: 640px; max-width: calc(100% - 40px); background: rgba(13,13,34,0.92); backdrop-filter: blur(24px) saturate(160%); -webkit-backdrop-filter: blur(24px) saturate(160%); border: 1px solid var(--hair-3); border-radius: 14px; box-shadow: 0 30px 80px rgba(0,0,0,0.75), 0 1px 0 rgba(255,255,255,0.06) inset; overflow: hidden; animation: modalIn .25s cubic-bezier(0.16,1,0.3,1); }
+@keyframes modalIn { from { transform: translateY(-12px) scale(0.98); opacity: 0; } to { transform: none; opacity: 1; } }
+.modal-head { padding: 14px 18px 0; display: flex; align-items: center; gap: 10px; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-3); }
+.modal-head .arr { color: var(--indigo-2); }
+.modal-body { padding: 12px 18px 18px; }
+.modal-body textarea { width: 100%; min-height: 220px; resize: none; background: transparent; border: none; outline: none; font-family: var(--font-sans); font-size: 14.5px; line-height: 1.55; color: var(--ink-1); }
+.modal-body textarea::placeholder { color: var(--ink-4); }
+.modal-foot { display: flex; align-items: center; justify-content: space-between; padding: 12px 18px; border-top: 1px solid var(--hair); background: rgba(255,255,255,0.015); font-family: var(--font-mono); font-size: 11px; color: var(--ink-3); }
+.modal-foot .actions { display: flex; gap: 8px; }
+.btn-cancel { height: 30px; padding: 0 12px; border-radius: 7px; background: rgba(255,255,255,0.04); border: 1px solid var(--hair-2); font-size: 12px; color: var(--ink-2); font-family: var(--font-sans); font-weight: 500; }
+.btn-cancel:hover { background: rgba(255,255,255,0.07); color: var(--ink-1); }
+.btn-go { position: relative; height: 30px; padding: 0 16px; border-radius: 7px; background: linear-gradient(135deg, rgba(99,102,241,0.95), rgba(34,211,238,0.95)); color: #fff; font-family: var(--font-sans); font-weight: 600; font-size: 12px; letter-spacing: 0.01em; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 1px 0 rgba(255,255,255,0.20) inset, 0 6px 16px rgba(99,102,241,0.4); overflow: hidden; }
+.btn-go::after { content: ""; position: absolute; top: 0; left: -120%; width: 60%; height: 100%; background: linear-gradient(110deg, transparent 0%, rgba(255,255,255,0.32) 50%, transparent 100%); transform: skewX(-18deg); transition: left .8s ease; }
+.btn-go:hover { filter: brightness(1.07); }
+.btn-go:hover::after { left: 130%; }
+.btn-go:active { transform: translateY(1px); }
+.btn-go svg { width: 12px; height: 12px; }
+.btn-go:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* Error in modal */
+#modalError { display: none; padding: 8px 18px; font-size: 12px; color: #fca5a5; background: rgba(239,68,68,0.1); border-top: 1px solid rgba(239,68,68,0.2); font-family: var(--font-mono); }
+
+/* LOADING */
+.scan-line { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); z-index: 20; display: none; flex-direction: column; align-items: center; gap: 14px; pointer-events: none; }
+.scan-line.show { display: flex; }
+.scan-orb { width: 56px; height: 56px; position: relative; }
+.scan-orb::before, .scan-orb::after { content: ""; position: absolute; inset: 0; border-radius: 50%; border: 1px solid rgba(99,102,241,0.5); animation: orbWave 1.6s cubic-bezier(0.16,1,0.3,1) infinite; }
+.scan-orb::after { animation-delay: 0.6s; }
+@keyframes orbWave { from { transform: scale(0.3); opacity: 1; } to { transform: scale(1.4); opacity: 0; } }
+.scan-orb i { position: absolute; inset: 12px; border-radius: 50%; background: radial-gradient(circle, #818cf8, #6366f1); box-shadow: 0 0 22px rgba(99,102,241,0.7); animation: corePulse 1.4s ease-in-out infinite; }
+@keyframes corePulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.1)} }
+.scan-text { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.20em; text-transform: uppercase; color: var(--ink-2); }
+.scan-text .blink { color: var(--lime); animation: textBlink 1s steps(1) infinite; }
+@keyframes textBlink { 50% { opacity: 0; } }
+
+/* TOOLTIP */
+.tip { position: absolute; z-index: 50; pointer-events: none; min-width: 200px; max-width: 260px; padding: 10px 12px; border-radius: 9px; background: rgba(13,13,34,0.92); backdrop-filter: blur(20px); border: 1px solid var(--hair-3); box-shadow: 0 14px 40px rgba(0,0,0,0.6); opacity: 0; transform: translateY(4px); transition: opacity .14s ease, transform .14s ease; }
+.tip.show { opacity: 1; transform: translateY(0); }
+.tip .ttitle { font-size: 12.5px; font-weight: 600; letter-spacing: -0.005em; margin-bottom: 6px; color: var(--ink-1); }
+.tip .trow { display: flex; justify-content: space-between; font-size: 11px; padding: 2px 0; color: var(--ink-3); }
+.tip .trow .v { color: var(--ink-1); font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.tip .tbar { height: 3px; background: rgba(255,255,255,0.08); border-radius: 999px; margin: 6px 0; overflow: hidden; }
+.tip .tbar i { display: block; height: 100%; background: linear-gradient(90deg, #6366f1, #22d3ee); }
+
+.corner-tr, .corner-br { position: absolute; z-index: 8; font-family: var(--font-mono); font-size: 9.5px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-5); pointer-events: none; }
+.corner-br { right: 22px; bottom: 215px; text-align: right; }
+.corner-tr { right: 22px; top: 75px; text-align: right; }
+
+@media (max-width: 980px) { .instrument { display: none; } .inspector { width: 280px; } }
+
+/* ── EMPTY-STATE HINT ──────────────────────────────────────────────────────── */
+.empty-hint {
+  position: absolute;
+  left: 50%; top: 48%;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+  width: 320px;
+  padding: 22px 24px;
+  border-radius: 14px;
+  background: rgba(7, 7, 26, 0.52);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 8px 40px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06);
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+.empty-hint.hidden { opacity: 0; }
+.empty-hint-logo {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: var(--indigo-2);
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.empty-hint-logo::before {
+  content: '';
+  display: inline-block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--indigo-2);
+  box-shadow: 0 0 8px rgba(129,140,248,0.8);
+}
+.empty-hint h3 {
+  margin: 0 0 7px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink-1);
+  line-height: 1.3;
+}
+.empty-hint p {
+  margin: 0 0 14px;
+  font-size: 12.5px;
+  color: var(--ink-3);
+  line-height: 1.6;
+}
+.empty-hint-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.empty-hint-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--ink-3);
+  line-height: 1.4;
+}
+.empty-hint-step .num {
+  flex-shrink: 0;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: rgba(99,102,241,0.18);
+  border: 1px solid rgba(99,102,241,0.35);
+  color: var(--indigo-2);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  display: flex; align-items: center; justify-content: center;
+}
+.empty-hint kbd {
+  display: inline-block;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.14);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink-2);
+}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="brand">
+      <span class="mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M2 12c2-3 4-3 6 0s4 3 6 0 4-3 6 0"/>
+          <path d="M2 17c2-3 4-3 6 0s4 3 6 0 4-3 6 0" opacity="0.55"/>
+        </svg>
+      </span>
+      <span class="name">RippleIQ</span>
+      <span class="sub">See the ripple before it becomes a wave.</span>
+    </div>
+    <div class="topmeta">
+      <span class="pill">v0.4.2</span>
+      <span class="pill"><span class="dot-live"></span> ENGINE LIVE</span>
+      <span class="pill" id="latencyPill">LAT —</span>
+    </div>
+  </div>
+
+  <!-- COMMAND TRIGGER -->
+  <button class="cmd-trigger" id="cmdTrigger">
+    <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    <span class="placeholder"><b>Trace a new ripple</b> — paste an article…</span>
+    <span class="kbd">⌘ K</span>
+  </button>
+
+  <!-- LEFT INSTRUMENT STRIP -->
+  <aside class="instrument" id="instrument">
+    <div>
+      <div class="section-overline">Root event</div>
+      <div class="event-display" id="eventDisplay">
+        <span class="quote-mark"></span>Causal engine idle. Press <span style="font-family:var(--font-mono);font-size:11.5px;color:var(--ink-1);background:rgba(255,255,255,0.04);padding:1px 6px;border-radius:4px">⌘ K</span> to trace a ripple.
+      </div>
+      <div class="event-meta" id="eventMeta" style="display:none"></div>
+    </div>
+    <div>
+      <div class="section-overline">Signals</div>
+      <div class="readouts">
+        <div class="readout"><span class="num" id="rNodes">—</span><span class="lbl">Nodes<small>in chain</small></span></div>
+        <div class="readout"><span class="num" id="rDepth">—</span><span class="lbl">Depth<small>max hops</small></span></div>
+        <div class="readout"><span class="num" id="rConf">—</span><span class="lbl">Avg conf.<small>probability</small></span></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- SONAR / WORLD MAP BACKGROUND -->
+  <div class="sonar">
+    <div class="sonar-rings">
+      <img class="world-img" src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/eb/BlankMap-World.svg/2048px-BlankMap-World.svg.png" alt="" referrerpolicy="no-referrer" onerror="this.style.display='none'" />
+      <svg id="sonarSvg" preserveAspectRatio="xMidYMid slice" viewBox="0 0 1000 500" style="position:absolute;inset:0">
+        <defs>
+          <pattern id="dotPattern" x="0" y="0" width="7" height="7" patternUnits="userSpaceOnUse">
+            <circle cx="1.4" cy="1.4" r="1" fill="rgba(99,102,241,0.55)"/>
+          </pattern>
+          <linearGradient id="scanGrad" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%"   stop-color="rgba(34,211,238,0)"/>
+            <stop offset="50%"  stop-color="rgba(34,211,238,0.35)"/>
+            <stop offset="100%" stop-color="rgba(34,211,238,0)"/>
+          </linearGradient>
+        </defs>
+        <g class="geo-grid">
+          <line x1="125" y1="0" x2="125" y2="500"/><line x1="250" y1="0" x2="250" y2="500"/>
+          <line x1="375" y1="0" x2="375" y2="500"/><line x1="500" y1="0" x2="500" y2="500" class="major"/>
+          <line x1="625" y1="0" x2="625" y2="500"/><line x1="750" y1="0" x2="750" y2="500"/>
+          <line x1="875" y1="0" x2="875" y2="500"/>
+          <line x1="0" y1="83"  x2="1000" y2="83"/><line x1="0" y1="167" x2="1000" y2="167"/>
+          <line x1="0" y1="250" x2="1000" y2="250" class="major"/>
+          <line x1="0" y1="333" x2="1000" y2="333"/><line x1="0" y1="417" x2="1000" y2="417"/>
+        </g>
+        <line class="crosshair" x1="0" y1="250" x2="1000" y2="250"/>
+        <line class="crosshair" x1="500" y1="0" x2="500" y2="500"/>
+        <text class="coord-label" x="10"  y="14">90.0° N</text>
+        <text class="coord-label" x="10"  y="494">90.0° S</text>
+        <text class="coord-label" x="990" y="14"  text-anchor="end">180.0° E</text>
+        <text class="coord-label" x="990" y="494" text-anchor="end">000.0°</text>
+        <rect class="scanbar" x="-60" y="0" width="120" height="500"/>
+      </svg>
+    </div>
+
+    <div id="cy"></div>
+    <div class="tip" id="tip"></div>
+
+    <!-- EMPTY STATE HINT -->
+    <div class="empty-hint" id="emptyHint">
+      <div class="empty-hint-logo">RippleIQ · Causal Sonar</div>
+      <h3>See the ripple before it becomes a wave.</h3>
+      <p>Paste any news article and RippleIQ traces its downstream causal chain — from the root trigger through second and third-order economic, geopolitical, and market effects.</p>
+      <div class="empty-hint-steps">
+        <div class="empty-hint-step">
+          <span class="num">1</span>
+          <span>Press <kbd>Ctrl K</kbd> to open the trace panel</span>
+        </div>
+        <div class="empty-hint-step">
+          <span class="num">2</span>
+          <span>Paste a news article (200–1500 words works best)</span>
+        </div>
+        <div class="empty-hint-step">
+          <span class="num">3</span>
+          <span>Hit <kbd>Trace ripples</kbd> — the causal graph builds live</span>
+        </div>
+        <div class="empty-hint-step">
+          <span class="num">4</span>
+          <span>Hover nodes to explore connections · click to inspect depth</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="corner-tr" id="cornerTR">SCAN ID — </div>
+    <div class="corner-br" id="cornerBR">EQUIRECTANGULAR · 59 rules · 8 domains</div>
+
+    <div class="scan-line" id="scanLine">
+      <div class="scan-orb"><i></i></div>
+      <div class="scan-text">TRACING RIPPLES <span class="blink">▌</span></div>
+    </div>
+  </div>
+
+  <!-- BOTTOM RIBBON -->
+  <div class="ribbon">
+    <div class="ribbon-head">
+      <div class="ribbon-title"><b>Ripple timeline</b> — propagation by hop</div>
+      <div class="ribbon-meta" id="ribbonMeta">no chain loaded</div>
+    </div>
+    <div class="ribbon-track" id="ribbonTrack">
+      <div class="ribbon-col" data-hop="—" style="opacity:0.5">
+        <div style="font-size:11.5px;color:var(--ink-4);padding:8px 4px">Run analysis to see ripples →</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- INSPECTOR -->
+  <aside class="inspector" id="inspector">
+    <div class="insp-head">
+      <span class="swatch" id="inspSwatch" style="background:#6366f1"></span>
+      <div class="titles">
+        <div class="t1" id="inspT1">—</div>
+        <div class="t2" id="inspT2">—</div>
+      </div>
+      <button class="close" id="inspClose">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <div class="insp-body">
+      <div class="insp-meter"><span>IMPACT</span><b id="inspImpact">—</b></div>
+      <div class="meter-bar"><i id="inspBar" style="width:0%"></i></div>
+      <div class="insp-grid">
+        <div class="insp-cell"><div class="k">Hop</div><div class="v" id="inspHop">—</div></div>
+        <div class="insp-cell"><div class="k">Probability</div><div class="v" id="inspProb">—</div></div>
+        <div class="insp-cell"><div class="k">Edge str.</div><div class="v" id="inspEdge">—</div></div>
+        <div class="insp-cell"><div class="k">Direction</div><div class="v" id="inspDir">—</div></div>
+      </div>
+      <div class="insp-tags" id="inspTags"></div>
+    </div>
+  </aside>
+
+  <!-- COMMAND PALETTE MODAL -->
+  <div class="modal-veil" id="modal">
+    <div class="modal">
+      <div class="modal-head">
+        <span class="arr">⌥</span> TRACE NEW RIPPLE — paste source article
+      </div>
+      <div class="modal-body">
+        <textarea id="article" placeholder="A 6.4-magnitude earthquake hit Hsinchu Science Park overnight, halting advanced-node production at TSMC…&#10;&#10;(200–1500 words gives the cleanest trace)"></textarea>
+      </div>
+      <div id="modalError"></div>
+      <div class="modal-foot">
+        <span>Ctrl + Enter to run · Esc to close</span>
+        <div class="actions">
+          <button class="btn-cancel" id="btnCancel">Cancel</button>
+          <button class="btn-go" id="btnGo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/></svg>
+            Trace ripples
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /shell -->
+
+<script>
+/* ── DOMAIN CONFIG ──────────────────────────────────────────────────────────── */
+const DOMAIN = {
+  root:        { stop1:'#818cf8', stop2:'#6366f1', glow:'rgba(99,102,241,0.65)',  label:'Root'        },
+  agriculture: { stop1:'#34d399', stop2:'#059669', glow:'rgba(5,150,105,0.45)',   label:'Agriculture' },
+  economics:   { stop1:'#60a5fa', stop2:'#2563eb', glow:'rgba(37,99,235,0.45)',   label:'Economics'   },
+  energy:      { stop1:'#fbbf24', stop2:'#d97706', glow:'rgba(217,119,6,0.45)',   label:'Energy'      },
+  finance:     { stop1:'#a78bfa', stop2:'#7c3aed', glow:'rgba(124,58,237,0.45)', label:'Finance'     },
+  geopolitics: { stop1:'#f87171', stop2:'#dc2626', glow:'rgba(220,38,38,0.45)',  label:'Geopolitics' },
+  health:      { stop1:'#f472b6', stop2:'#db2777', glow:'rgba(219,39,119,0.45)', label:'Health'      },
+  technology:  { stop1:'#22d3ee', stop2:'#0891b2', glow:'rgba(8,145,178,0.50)',  label:'Technology'  },
+  labor:       { stop1:'#fb923c', stop2:'#ea580c', glow:'rgba(234,88,12,0.45)',  label:'Labor'       },
+};
+const domColor = d => DOMAIN[d] || DOMAIN.economics;
+
+/* ── HELPERS ─────────────────────────────────────────────────────────────────── */
+const $ = id => document.getElementById(id);
+const escHtml = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function truncate(s, n) { s = s || ''; return s.length > n ? s.slice(0, n-1) + '…' : s; }
+function randId() {
+  const h = () => Math.floor(Math.random()*0x10000).toString(16).toUpperCase().padStart(4,'0');
+  return `0x${h().slice(0,4)}-${h().slice(0,4)}`;
+}
+
+/* ── ELEMENT REFS ────────────────────────────────────────────────────────────── */
+const els = {
+  cmdTrigger: $('cmdTrigger'), modal: $('modal'), article: $('article'),
+  btnCancel: $('btnCancel'), btnGo: $('btnGo'), modalError: $('modalError'),
+  scanLine: $('scanLine'), cyHost: $('cy'),
+  ribbonTrack: $('ribbonTrack'), ribbonMeta: $('ribbonMeta'),
+  eventDisplay: $('eventDisplay'), eventMeta: $('eventMeta'),
+  rNodes: $('rNodes'), rDepth: $('rDepth'), rConf: $('rConf'),
+  cornerTR: $('cornerTR'), cornerBR: $('cornerBR'),
+  inspector: $('inspector'), inspClose: $('inspClose'),
+  inspSwatch: $('inspSwatch'), inspT1: $('inspT1'), inspT2: $('inspT2'),
+  inspImpact: $('inspImpact'), inspBar: $('inspBar'),
+  inspHop: $('inspHop'), inspProb: $('inspProb'), inspEdge: $('inspEdge'), inspDir: $('inspDir'),
+  inspTags: $('inspTags'), tip: $('tip'), latencyPill: $('latencyPill'), emptyHint: $('emptyHint'),
+};
+
+/* ── MODAL ───────────────────────────────────────────────────────────────────── */
+function openModal()  { els.modal.classList.add('open'); setTimeout(() => els.article.focus(), 60); }
+function closeModal() { els.modal.classList.remove('open'); els.modalError.style.display = 'none'; }
+
+els.cmdTrigger.addEventListener('click', openModal);
+els.btnCancel.addEventListener('click', closeModal);
+els.modal.addEventListener('click', e => { if (e.target === els.modal) closeModal(); });
+els.btnGo.addEventListener('click', () => { closeModal(); runAnalysis(); });
+window.addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); openModal(); }
+  if (e.key === 'Escape') closeModal();
+  if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && els.modal.classList.contains('open')) {
+    e.preventDefault(); closeModal(); runAnalysis();
+  }
+});
+
+/* ── CYTOSCAPE ───────────────────────────────────────────────────────────────── */
+let cy = null;
+
+function initCy() {
+  cy = cytoscape({
+    container: els.cyHost,
+    minZoom: 0.4, maxZoom: 2.4,
+    boxSelectionEnabled: false,
+    style: [
+      {
+        selector: 'node',
+        style: {
+          'shape': 'round-rectangle',
+          'width':  ele => 110 + (ele.data('score') || 0.5) * 70,
+          'height': ele => 38 + (ele.data('score') || 0.5) * 12,
+          'label': 'data(label)',
+          'color': '#ffffff',
+          'font-family': 'Inter, sans-serif',
+          'font-size': 12, 'font-weight': 600,
+          'text-valign': 'center', 'text-halign': 'center',
+          'text-wrap': 'wrap',
+          'text-max-width': ele => 100 + (ele.data('score') || 0.5) * 60,
+          'background-fill': 'linear-gradient',
+          'background-gradient-stop-colors': ele => {
+            const d = domColor(ele.data('domain'));
+            return `${d.stop1} ${d.stop2}`;
+          },
+          'background-gradient-stop-positions': '0 100',
+          'background-gradient-direction': 'to-bottom-right',
+          'border-width': 1, 'border-color': 'rgba(255,255,255,0.20)', 'border-opacity': 1,
+          'shadow-blur': 18, 'shadow-color': ele => domColor(ele.data('domain')).glow,
+          'shadow-offset-x': 0, 'shadow-offset-y': 0, 'shadow-opacity': 0.6,
+          'overlay-opacity': 0,
+          'transition-property': 'opacity, border-color, border-width, shadow-blur',
+          'transition-duration': 200,
+        }
+      },
+      {
+        selector: 'node[isRoot = "true"]',
+        style: { 'width': 200, 'height': 72, 'font-size': 15, 'font-weight': 700, 'text-max-width': 176, 'border-width': 2.5, 'border-color': '#a5b4fc', 'border-opacity': 0.95, 'shadow-blur': 28 }
+      },
+      {
+        selector: 'edge',
+        style: {
+          'curve-style': 'unbundled-bezier',
+          'control-point-distances': [30],
+          'control-point-weights': [0.5],
+          'width': ele => 1.2 + (ele.data('strength') || 0.6) * 3.0,
+          'line-color': ele => domColor(ele.source().data('domain')).stop2,
+          'line-opacity': 0.7,
+          'target-arrow-color': ele => domColor(ele.source().data('domain')).stop1,
+          'target-arrow-shape': 'triangle', 'arrow-scale': 0.95,
+          'transition-property': 'line-opacity, width', 'transition-duration': 200,
+        }
+      },
+      { selector: '.faded',          style: { 'opacity': 0.55, 'text-opacity': 0.55 } },
+      { selector: 'edge.faded',      style: { 'line-opacity': 0.25 } },
+      { selector: '.highlighted',    style: { 'border-color': '#ffffff', 'border-width': 2, 'shadow-blur': 32 } },
+      { selector: 'edge.highlighted',style: { 'line-opacity': 1, 'width': ele => 2 + (ele.data('strength') || 0.6) * 3.2 } },
+      {
+        selector: 'edge.show-label',
+        style: {
+          'label': ele => Math.round((ele.data('probability') || 0) * 100) + '%',
+          'color': '#ffffff', 'text-background-color': '#0d0d22', 'text-background-opacity': 0.95,
+          'text-background-padding': 4, 'text-background-shape': 'roundrectangle',
+          'text-border-color': 'rgba(255,255,255,0.20)', 'text-border-width': 1, 'text-border-opacity': 1,
+          'font-size': 10, 'font-weight': 600, 'font-family': 'JetBrains Mono, monospace',
+          'text-rotation': 'autorotate',
+        }
+      }
+    ]
+  });
+
+  cy.on('mouseover', 'node', e => {
+    const n = e.target;
+    cy.elements().addClass('faded');
+    n.removeClass('faded').addClass('highlighted');
+    n.connectedEdges().removeClass('faded').addClass('highlighted show-label');
+    n.neighborhood('node').removeClass('faded').addClass('highlighted');
+    showTipNode(n, e.originalEvent);
+  });
+  cy.on('mouseout', 'node', clearHover);
+  cy.on('mouseover', 'edge', e => {
+    const ed = e.target;
+    cy.elements().addClass('faded');
+    ed.removeClass('faded').addClass('highlighted show-label');
+    ed.source().removeClass('faded').addClass('highlighted');
+    ed.target().removeClass('faded').addClass('highlighted');
+    showTipEdge(ed, e.originalEvent);
+  });
+  cy.on('mouseout', 'edge', clearHover);
+  cy.on('mousemove', e => { if (els.tip.classList.contains('show')) positionTip(e.originalEvent); });
+  els.cyHost.addEventListener('mouseleave', clearHover);
+
+  cy.on('tap', 'node', e => {
+    showInspector(e.target.data());
+    highlightChip(e.target.data('id'));
+    cy.animate({ center: { eles: e.target }, zoom: Math.max(cy.zoom(), 0.85) }, { duration: 360 });
+  });
+  cy.on('tap', e => {
+    if (e.target === cy) { closeInspector(); clearChipSelection(); }
+  });
+}
+
+function clearHover() {
+  cy.elements().removeClass('faded highlighted show-label');
+  els.tip.classList.remove('show');
+}
+
+/* ── TOOLTIPS ────────────────────────────────────────────────────────────────── */
+function showTipNode(n, evt) {
+  const d = n.data();
+  const dom = d.isRoot === 'true' ? 'root' : (d.origDomain || d.domain);
+  els.tip.innerHTML = `
+    <div class="ttitle">${escHtml(d.label)}</div>
+    <div class="trow"><span>Impact</span><span class="v">${(d.score*100).toFixed(0)}%</span></div>
+    <div class="tbar"><i style="width:${(d.score*100).toFixed(0)}%"></i></div>
+    <div class="trow"><span>Domain</span><span class="v">${(DOMAIN[dom]||{}).label || dom}</span></div>
+    <div class="trow"><span>Hop</span><span class="v">${d.hop}</span></div>
+    <div class="trow"><span>Probability</span><span class="v">${((d.probability||0)*100).toFixed(0)}%</span></div>
+    <div class="trow"><span>Edge strength</span><span class="v">${(d.edgeStrength||0).toFixed(2)}</span></div>
+  `;
+  positionTip(evt); els.tip.classList.add('show');
+}
+function showTipEdge(ed, evt) {
+  els.tip.innerHTML = `
+    <div class="ttitle">${escHtml(ed.source().data('label'))} → ${escHtml(ed.target().data('label'))}</div>
+    <div class="trow"><span>Strength</span><span class="v">${(ed.data('strength')||0).toFixed(2)}</span></div>
+    <div class="tbar"><i style="width:${((ed.data('strength')||0)*100).toFixed(0)}%"></i></div>
+    <div class="trow"><span>Probability</span><span class="v">${((ed.data('probability')||0)*100).toFixed(0)}%</span></div>
+  `;
+  positionTip(evt); els.tip.classList.add('show');
+}
+function positionTip(evt) {
+  if (!evt) return;
+  const r = els.cyHost.getBoundingClientRect();
+  const x = evt.clientX - r.left + 14, y = evt.clientY - r.top + 14;
+  els.tip.style.left = Math.min(Math.max(8, x), r.width - els.tip.offsetWidth - 12) + 'px';
+  els.tip.style.top  = Math.min(Math.max(8, y), r.height - els.tip.offsetHeight - 12) + 'px';
+}
+
+/* ── INSPECTOR ───────────────────────────────────────────────────────────────── */
+function showInspector(d) {
+  const dom = d.isRoot === 'true' ? 'root' : (d.origDomain || d.domain);
+  const c = domColor(dom);
+  els.inspSwatch.style.background = `linear-gradient(180deg,${c.stop1},${c.stop2})`;
+  els.inspSwatch.style.boxShadow  = `0 0 10px ${c.glow}`;
+  els.inspT1.textContent = d.label;
+  els.inspT2.textContent = d.id;
+  els.inspImpact.textContent = `${(d.score*100).toFixed(0)}%`;
+  els.inspBar.style.width = `${(d.score*100).toFixed(0)}%`;
+  els.inspHop.textContent  = d.hop;
+  els.inspProb.textContent = `${((d.probability||0)*100).toFixed(0)}%`;
+  els.inspEdge.textContent = (d.edgeStrength ?? 0).toFixed(2);
+  els.inspDir.textContent  = d.direction || '—';
+  els.inspTags.innerHTML = `
+    <span class="insp-tag"><span class="dot" style="background:${c.stop2}"></span>${(DOMAIN[dom]||{}).label || dom}</span>
+    <span class="insp-tag">Hop ${d.hop}</span>
+    <span class="insp-tag">${d.direction || 'neutral'}</span>
+  `;
+  els.inspector.classList.add('open');
+}
+function closeInspector() { els.inspector.classList.remove('open'); }
+els.inspClose.addEventListener('click', closeInspector);
+
+function highlightChip(id) {
+  clearChipSelection();
+  const chip = els.ribbonTrack.querySelector(`[data-id="${id}"]`);
+  if (chip) chip.classList.add('active');
+}
+function clearChipSelection() {
+  els.ribbonTrack.querySelectorAll('.ripple-chip.active').forEach(c => c.classList.remove('active'));
+}
+
+/* ── RENDER ──────────────────────────────────────────────────────────────────── */
+function renderAll(data, rawArticle) {
+  els.emptyHint.classList.add('hidden');
+  cy.elements().remove();
+
+  // Build cytoscape nodes
+  const nodes = data.causal_chain.map(n => ({
+    data: {
+      id: n.id, label: n.label, score: n.score, hop: n.hop,
+      domain: n.hop === 0 ? 'root' : n.domain,
+      origDomain: n.domain, direction: n.direction,
+      probability: n.probability, edgeStrength: n.edge_strength,
+      isRoot: n.hop === 0 ? 'true' : 'false',
+    }
+  }));
+
+  // Build edges from causal_chain parent references
+  const edges = data.causal_chain.filter(n => n.parent).map(n => ({
+    data: {
+      id: `${n.parent}->${n.id}`, source: n.parent, target: n.id,
+      strength: n.edge_strength, probability: n.probability,
+    }
+  }));
+
+  cy.add(nodes); cy.add(edges);
+
+  cy.layout({
+    name: 'dagre', rankDir: 'TB',
+    nodeSep: 36, rankSep: 70, edgeSep: 18, animate: false,
+  }).run();
+
+  // Fit with room for ribbon at bottom
+  setTimeout(() => {
+    cy.resize();
+    const bb = cy.elements().boundingBox();
+    const cw = cy.width(), ch = cy.height();
+    const padTop = 60, padBottom = 220, padX = 260;
+    const availW = Math.max(100, cw - 2 * padX);
+    const availH = Math.max(100, ch - padTop - padBottom);
+    const zoom = Math.min(availW / bb.w, availH / bb.h, 0.92);
+    cy.viewport({
+      zoom,
+      pan: {
+        x: cw / 2 - ((bb.x1 + bb.x2) / 2) * zoom,
+        y: padTop + availH / 2 - ((bb.y1 + bb.y2) / 2) * zoom,
+      }
+    });
+  }, 30);
+
+
+  // Left strip
+  const displayText = rawArticle || data.root_event;
+  els.eventDisplay.innerHTML = `<span class="quote-mark"></span>${escHtml(truncate(displayText, 240))}`;
+  els.eventMeta.style.display = '';
+  const c = domColor(data.domain);
+  els.eventMeta.innerHTML = `
+    <div class="row"><span class="k">EVENT</span><span class="v" title="${escHtml(data.root_event)}">${escHtml(truncate(data.root_event, 40))}</span></div>
+    <div class="row"><span class="k">CANONICAL</span><span class="v">${escHtml(data.canonical_node)}</span></div>
+    <div class="row"><span class="k">DOMAIN</span><span class="v" style="color:${c.stop1}">${(DOMAIN[data.domain]||{}).label || data.domain}</span></div>
+    <div class="row"><span class="k">ENTITIES</span><span class="v">${data.entities.length}${data.entities.length ? ' — ' + data.entities.slice(0,2).join(', ') : ''}</span></div>
+    <div class="row"><span class="k">SCAN&nbsp;ID</span><span class="v" style="color:var(--ink-4)">${escHtml(data.scan_id)}</span></div>
+  `;
+
+  // Signals
+  els.rNodes.textContent = data.stats.total_nodes;
+  els.rDepth.textContent = data.stats.max_depth;
+  els.rConf.innerHTML = `${Math.round(data.stats.avg_confidence * 100)}<span class="unit">%</span>`;
+
+  // Corner labels
+  els.cornerTR.textContent = `SCAN ID — ${data.scan_id}`;
+  els.cornerBR.textContent = `EQUIRECTANGULAR · 1 hop = ${data.stats.max_depth} lvls · ${data.causal_chain.length} nodes`;
+
+  // Ribbon
+  renderRibbon(data);
+}
+
+function renderRibbon(data) {
+  const byHop = {};
+  data.causal_chain.forEach(n => { (byHop[n.hop] = byHop[n.hop] || []).push(n); });
+  const hops = Object.keys(byHop).map(Number).sort((a,b) => a - b);
+
+  els.ribbonTrack.innerHTML = '';
+  els.ribbonMeta.textContent = `${data.causal_chain.length} nodes · ${hops.length} hops · ${Math.round(data.stats.avg_confidence*100)}% avg conf.`;
+
+  hops.forEach(h => {
+    const col = document.createElement('div');
+    col.className = byHop[h].length > 1 ? 'ribbon-col ribbon-col--multi' : 'ribbon-col';
+    col.dataset.hop = h === 0 ? 'ROOT' : `HOP ${h}`;
+
+    byHop[h].sort((a,b) => b.score - a.score).forEach((n, i) => {
+      const dom = n.hop === 0 ? 'root' : n.domain;
+      const c = domColor(dom);
+      const chip = document.createElement('div');
+      chip.className = 'ripple-chip';
+      chip.dataset.id = n.id;
+      chip.style.animationDelay = `${i * 50 + h * 30}ms`;
+      chip.innerHTML = `
+        <span class="swatch" style="background:linear-gradient(180deg,${c.stop1},${c.stop2});box-shadow:0 0 8px ${c.glow}"></span>
+        <div class="body">
+          <div class="lbl">${escHtml(n.label)}</div>
+          <div class="meta">${(DOMAIN[dom]||{}).label || dom} · ${n.direction}</div>
+        </div>
+        <div class="pct">${Math.round(n.score * 100)}</div>
+      `;
+      chip.addEventListener('click', () => {
+        const node = cy.getElementById(n.id);
+        if (node && node.length) {
+          showInspector(node.data());
+          highlightChip(n.id);
+          cy.animate({ center: { eles: node }, zoom: Math.max(cy.zoom(), 0.95) }, { duration: 380 });
+        }
+      });
+      col.appendChild(chip);
+    });
+    els.ribbonTrack.appendChild(col);
+  });
+}
+
+/* ── ANALYZE ─────────────────────────────────────────────────────────────────── */
+async function runAnalysis() {
+  const article = els.article.value.trim();
+  if (!article) { openModal(); return; }
+
+  els.emptyHint.classList.add('hidden');
+  els.scanLine.classList.add('show');
+  els.btnGo.disabled = true;
+
+  const t0 = performance.now();
+  try {
+    const res = await fetch('/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ article })
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `Server error ${res.status}`);
+    }
+
+    const data = await res.json();
+    data.scan_id = randId(); // generate client-side since API doesn't return one
+
+    const lat = Math.round(performance.now() - t0);
+    els.latencyPill.textContent = `LAT ${lat}ms`;
+
+    renderAll(data, article);
+
+  } catch (err) {
+    els.modalError.textContent = '⚠ ' + err.message;
+    els.modalError.style.display = 'block';
+    openModal();
+  } finally {
+    els.scanLine.classList.remove('show');
+    els.btnGo.disabled = false;
+  }
+}
+
+/* ── INIT ────────────────────────────────────────────────────────────────────── */
+window.addEventListener('load', () => {
+  // Register dagre layout — must happen after both cytoscape and cytoscape-dagre load
+  if (typeof cytoscapeDagre !== 'undefined') cytoscape.use(cytoscapeDagre);
+  initCy();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,594 @@
+{
+  "rules": [
+    {
+      "from": "LOW_RAINFALL",
+      "to": "CROP_YIELD_DECLINE",
+      "direction": "negative",
+      "strength": 0.85,
+      "probability": 0.90,
+      "lag_days": 90,
+      "domain": "agriculture",
+      "description": "Reduced rainfall directly reduces crop yields"
+    },
+    {
+      "from": "DROUGHT",
+      "to": "CROP_YIELD_DECLINE",
+      "direction": "negative",
+      "strength": 0.90,
+      "probability": 0.93,
+      "lag_days": 60,
+      "domain": "agriculture",
+      "description": "Prolonged drought severely damages crops"
+    },
+    {
+      "from": "CROP_YIELD_DECLINE",
+      "to": "FOOD_SUPPLY_DECLINE",
+      "direction": "negative",
+      "strength": 0.80,
+      "probability": 0.85,
+      "lag_days": 60,
+      "domain": "agriculture",
+      "description": "Lower crop yield reduces available food supply"
+    },
+    {
+      "from": "CROP_YIELD_DECLINE",
+      "to": "FARMER_INCOME_DECLINE",
+      "direction": "negative",
+      "strength": 0.78,
+      "probability": 0.82,
+      "lag_days": 90,
+      "domain": "agriculture",
+      "description": "Reduced yields cut farmer revenues"
+    },
+    {
+      "from": "FARMER_INCOME_DECLINE",
+      "to": "RURAL_POVERTY_RISE",
+      "direction": "negative",
+      "strength": 0.72,
+      "probability": 0.76,
+      "lag_days": 120,
+      "domain": "economics",
+      "description": "Falling farm income raises rural poverty rates"
+    },
+    {
+      "from": "FOOD_SUPPLY_DECLINE",
+      "to": "FOOD_PRICES_RISE",
+      "direction": "negative",
+      "strength": 0.85,
+      "probability": 0.90,
+      "lag_days": 30,
+      "domain": "economics",
+      "description": "Reduced food supply drives food price increases"
+    },
+    {
+      "from": "FOOD_PRICES_RISE",
+      "to": "INFLATION_RISE",
+      "direction": "negative",
+      "strength": 0.70,
+      "probability": 0.80,
+      "lag_days": 30,
+      "domain": "economics",
+      "description": "Higher food prices are a major component of CPI inflation"
+    },
+    {
+      "from": "FOOD_PRICES_RISE",
+      "to": "SOCIAL_UNREST_RISK",
+      "direction": "negative",
+      "strength": 0.60,
+      "probability": 0.65,
+      "lag_days": 90,
+      "domain": "geopolitics",
+      "description": "Unaffordable food prices historically trigger social unrest"
+    },
+    {
+      "from": "INFLATION_RISE",
+      "to": "CONSUMER_SPENDING_DECLINE",
+      "direction": "negative",
+      "strength": 0.65,
+      "probability": 0.75,
+      "lag_days": 60,
+      "domain": "economics",
+      "description": "Rising prices erode purchasing power and cut discretionary spending"
+    },
+    {
+      "from": "INFLATION_RISE",
+      "to": "INTEREST_RATE_RISE",
+      "direction": "negative",
+      "strength": 0.75,
+      "probability": 0.80,
+      "lag_days": 90,
+      "domain": "finance",
+      "description": "Central banks raise interest rates to combat inflation"
+    },
+    {
+      "from": "INFLATION_RISE",
+      "to": "STOCK_MARKET_DECLINE",
+      "direction": "negative",
+      "strength": 0.60,
+      "probability": 0.68,
+      "lag_days": 30,
+      "domain": "finance",
+      "description": "High inflation erodes corporate margins and equity valuations"
+    },
+    {
+      "from": "CONSUMER_SPENDING_DECLINE",
+      "to": "RETAIL_REVENUE_DECLINE",
+      "direction": "negative",
+      "strength": 0.80,
+      "probability": 0.85,
+      "lag_days": 30,
+      "domain": "economics",
+      "description": "Lower consumer spending directly reduces retail revenues"
+    },
+    {
+      "from": "OIL_SUPPLY_DISRUPTION",
+      "to": "OIL_PRICES_RISE",
+      "direction": "negative",
+      "strength": 0.90,
+      "probability": 0.92,
+      "lag_days": 14,
+      "domain": "energy",
+      "description": "Supply disruptions create immediate oil price spikes"
+    },
+    {
+      "from": "OIL_PRICES_RISE",
+      "to": "TRANSPORT_COSTS_RISE",
+      "direction": "negative",
+      "strength": 0.85,
+      "probability": 0.88,
+      "lag_days": 30,
+      "domain": "energy",
+      "description": "Higher oil prices raise fuel costs for transportation and logistics"
+    },
+    {
+      "from": "OIL_PRICES_RISE",
+      "to": "ENERGY_COSTS_RISE",
+      "direction": "negative",
+      "strength": 0.80,
+      "probability": 0.85,
+      "lag_days": 21,
+      "domain": "energy",
+      "description": "Oil price increases drive up overall energy costs"
+    },
+    {
+      "from": "TRANSPORT_COSTS_RISE",
+      "to": "MANUFACTURING_COSTS_RISE",
+      "direction": "negative",
+      "strength": 0.75,
+      "probability": 0.80,
+      "lag_days": 45,
+      "domain": "economics",
+      "description": "Higher transport costs increase input costs for manufacturers"
+    },
+    {
+      "from": "ENERGY_COSTS_RISE",
+      "to": "MANUFACTURING_COSTS_RISE",
+      "direction": "negative",
+      "strength": 0.78,
+      "probability": 0.82,
+      "lag_days": 30,
+      "domain": "economics",
+      "description": "Energy is a core production input; higher energy costs raise manufacturing overhead"
+    },
+    {
+      "from": "MANUFACTURING_COSTS_RISE",
+      "to": "PRODUCT_PRICES_RISE",
+      "direction": "negative",
+      "strength": 0.80,
+      "probability": 0.85,
+      "lag_days": 60,
+      "domain": "economics",
+      "description": "Manufacturers pass cost increases to consumers via higher prices"
+    },
+    {
+      "from": "MANUFACTURING_COSTS_RISE",
+      "to": "UNEMPLOYMENT_RISE",
+      "direction": "negative",
+      "strength": 0.65,
+      "probability": 0.70,
+      "lag_days": 90,
+      "domain": "labor",
+      "description": "Higher operating costs force companies to cut workforce"
+    },
+    {
+      "from": "PRODUCT_PRICES_RISE",
+      "to": "INFLATION_RISE",
+      "direction": "negative",
+      "strength": 0.70,
+      "probability": 0.80,
+      "lag_days": 30,
+      "domain": "economics",
+      "description": "Broad product price increases feed into overall inflation"
+    },
+    {
+      "from": "TRADE_WAR",
+      "to": "IMPORT_TARIFFS_RISE",
+      "direction": "negative",
+      "strength": 0.90,
+      "probability": 0.95,
+      "lag_days": 30,
+      "domain": "geopolitics",
+      "description": "Trade wars are typically enacted through import tariff increases"
+    },
+    {
+      "from": "TRADE_WAR",
+      "to": "EXPORT_DECLINE",
+      "direction": "negative",
+      "strength": 0.80,
+      "probability": 0.85,
+      "lag_days": 60,
+      "domain": "geopolitics",
+      "description": "Trade wars trigger retaliatory measures that cut export volumes"
+    },
+    {
+      "from": "IMPORT_TARIFFS_RISE",
+      "to": "MANUFACTURING_COSTS_RISE",
+      "direction": "negative",
+      "strength": 0.80,
+      "probability": 0.85,
+      "lag_days": 45,
+      "domain": "economics",
+      "description": "Tariffs on imported materials increase production costs"
+    },
+    {
+      "from": "EXPORT_DECLINE",
+      "to": "GDP_DECLINE",
+      "direction": "negative",
+      "strength": 0.75,
+      "probability": 0.80,
+      "lag_days": 90,
+      "domain": "economics",
+      "description": "Falling export revenues reduce gross domestic product"
+    },
+    {
+      "from": "GDP_DECLINE",
+      "to": "GOVERNMENT_REVENUE_DECLINE",
+      "direction": "negative",
+      "strength": 0.78,
+      "probability": 0.82,
+      "lag_days": 90,
+      "domain": "economics",
+      "description": "Economic contraction reduces tax revenues"
+    },
+    {
+      "from": "GOVERNMENT_REVENUE_DECLINE",
+      "to": "PUBLIC_SERVICES_DECLINE",
+      "direction": "negative",
+      "strength": 0.70,
+      "probability": 0.75,
+      "lag_days": 180,
+      "domain": "economics",
+      "description": "Lower government revenue forces cuts to public services"
+    },
+    {
+      "from": "UNEMPLOYMENT_RISE",
+      "to": "CONSUMER_SPENDING_DECLINE",
+      "direction": "negative",
+      "strength": 0.75,
+      "probability": 0.80,
+      "lag_days": 60,
+      "domain": "economics",
+      "description": "Job losses reduce household income and consumer spending"
+    },
+    {
+      "from": "SEMICONDUCTOR_SHORTAGE",
+      "to": "ELECTRONICS_PRODUCTION_DECLINE",
+      "direction": "negative",
+      "strength": 0.90,
+      "probability": 0.92,
+      "lag_days": 60,
+      "domain": "technology",
+      "description": "Chip shortages directly constrain electronics manufacturing output"
+    },
+    {
+      "from": "SEMICONDUCTOR_SHORTAGE",
+      "to": "AUTOMOTIVE_PRODUCTION_DECLINE",
+      "direction": "negative",
+      "strength": 0.85,
+      "probability": 0.88,
+      "lag_days": 45,
+      "domain": "technology",
+      "description": "Modern vehicles require thousands of chips; shortage halts car production"
+    },
+    {
+      "from": "ELECTRONICS_PRODUCTION_DECLINE",
+      "to": "TECH_PRODUCT_PRICES_RISE",
+      "direction": "negative",
+      "strength": 0.85,
+      "probability": 0.88,
+      "lag_days": 30,
+      "domain": "technology",
+      "description": "Reduced electronics supply drives up consumer tech prices"
+    },
+    {
+      "from": "TECH_PRODUCT_PRICES_RISE",
+      "to": "TECH_SECTOR_REVENUE_DECLINE",
+      "direction": "negative",
+      "strength": 0.65,
+      "probability": 0.72,
+      "lag_days": 90,
+      "domain": "technology",
+      "description": "Higher prices reduce unit sales and overall tech revenue"
+    },
+    {
+      "from": "TECH_SECTOR_REVENUE_DECLINE",
+      "to": "TECH_LAYOFFS",
+      "direction": "negative",
+      "strength": 0.78,
+      "probability": 0.82,
+      "lag_days": 90,
+      "domain": "labor",
+      "description": "Revenue pressure forces tech companies to reduce headcount"
+    },
+    {
+      "from": "TECH_LAYOFFS",
+      "to": "UNEMPLOYMENT_RISE",
+      "direction": "negative",
+      "strength": 0.85,
+      "probability": 0.90,
+      "lag_days": 30,
+      "domain": "labor",
+      "description": "Mass tech layoffs contribute significantly to unemployment"
+    },
+    {
+      "from": "PANDEMIC_OUTBREAK",
+      "to": "WORKFORCE_REDUCTION",
+      "direction": "negative",
+      "strength": 0.85,
+      "probability": 0.88,
+      "lag_days": 30,
+      "domain": "health",
+      "description": "Pandemic illness and lockdowns remove workers from the labour force"
+    },
+    {
+      "from": "PANDEMIC_OUTBREAK",
+      "to": "HEALTHCARE_DEMAND_RISE",
+      "direction": "negative",
+      "strength": 0.92,
+      "probability": 0.95,
+      "lag_days": 14,
+      "domain": "health",
+      "description": "Disease outbreaks cause a surge in healthcare demand"
+    },
+    {
+      "from": "HEALTHCARE_DEMAND_RISE",
+      "to": "HEALTHCARE_COSTS_RISE",
+      "direction": "negative",
+      "strength": 0.80,
+      "probability": 0.85,
+      "lag_days": 30,
+      "domain": "health",
+      "description": "Surge in demand overwhelms capacity and drives up healthcare costs"
+    },
+    {
+      "from": "WORKFORCE_REDUCTION",
+      "to": "SUPPLY_CHAIN_DISRUPTION",
+      "direction": "negative",
+      "strength": 0.80,
+      "probability": 0.85,
+      "lag_days": 45,
+      "domain": "economics",
+      "description": "Labour shortages break supply chain continuity"
+    },
+    {
+      "from": "WORKFORCE_REDUCTION",
+      "to": "GDP_DECLINE",
+      "direction": "negative",
+      "strength": 0.75,
+      "probability": 0.80,
+      "lag_days": 90,
+      "domain": "economics",
+      "description": "Reduced workforce cuts productive capacity and economic output"
+    },
+    {
+      "from": "SUPPLY_CHAIN_DISRUPTION",
+      "to": "MANUFACTURING_COSTS_RISE",
+      "direction": "negative",
+      "strength": 0.75,
+      "probability": 0.80,
+      "lag_days": 60,
+      "domain": "economics",
+      "description": "Supply chain disruptions raise procurement and production costs"
+    },
+    {
+      "from": "SUPPLY_CHAIN_DISRUPTION",
+      "to": "INVENTORY_SHORTAGE",
+      "direction": "negative",
+      "strength": 0.85,
+      "probability": 0.88,
+      "lag_days": 30,
+      "domain": "economics",
+      "description": "Disrupted supply chains create inventory shortfalls at retail level"
+    },
+    {
+      "from": "INVENTORY_SHORTAGE",
+      "to": "PRODUCT_PRICES_RISE",
+      "direction": "negative",
+      "strength": 0.78,
+      "probability": 0.82,
+      "lag_days": 30,
+      "domain": "economics",
+      "description": "Scarcity of goods drives prices higher"
+    },
+    {
+      "from": "INTEREST_RATE_RISE",
+      "to": "HOUSING_MARKET_DECLINE",
+      "direction": "negative",
+      "strength": 0.80,
+      "probability": 0.82,
+      "lag_days": 180,
+      "domain": "finance",
+      "description": "Higher mortgage rates reduce housing affordability and demand"
+    },
+    {
+      "from": "INTEREST_RATE_RISE",
+      "to": "BUSINESS_INVESTMENT_DECLINE",
+      "direction": "negative",
+      "strength": 0.72,
+      "probability": 0.78,
+      "lag_days": 90,
+      "domain": "finance",
+      "description": "Higher borrowing costs deter business capital investment"
+    },
+    {
+      "from": "INTEREST_RATE_RISE",
+      "to": "CONSUMER_CREDIT_DECLINE",
+      "direction": "negative",
+      "strength": 0.75,
+      "probability": 0.80,
+      "lag_days": 60,
+      "domain": "finance",
+      "description": "Higher rates make credit more expensive, reducing borrowing"
+    },
+    {
+      "from": "BUSINESS_INVESTMENT_DECLINE",
+      "to": "UNEMPLOYMENT_RISE",
+      "direction": "negative",
+      "strength": 0.65,
+      "probability": 0.70,
+      "lag_days": 120,
+      "domain": "labor",
+      "description": "Lower investment means fewer new jobs and potential layoffs"
+    },
+    {
+      "from": "CONSUMER_CREDIT_DECLINE",
+      "to": "CONSUMER_SPENDING_DECLINE",
+      "direction": "negative",
+      "strength": 0.70,
+      "probability": 0.75,
+      "lag_days": 45,
+      "domain": "economics",
+      "description": "Reduced credit access constrains consumer purchasing capacity"
+    },
+    {
+      "from": "STOCK_MARKET_DECLINE",
+      "to": "CONSUMER_CONFIDENCE_DECLINE",
+      "direction": "negative",
+      "strength": 0.65,
+      "probability": 0.70,
+      "lag_days": 30,
+      "domain": "finance",
+      "description": "Falling equity markets erode wealth and consumer confidence"
+    },
+    {
+      "from": "CONSUMER_CONFIDENCE_DECLINE",
+      "to": "CONSUMER_SPENDING_DECLINE",
+      "direction": "negative",
+      "strength": 0.72,
+      "probability": 0.78,
+      "lag_days": 30,
+      "domain": "economics",
+      "description": "Low consumer confidence leads households to cut spending"
+    },
+    {
+      "from": "HOUSING_MARKET_DECLINE",
+      "to": "CONSTRUCTION_DECLINE",
+      "direction": "negative",
+      "strength": 0.80,
+      "probability": 0.85,
+      "lag_days": 90,
+      "domain": "economics",
+      "description": "Weak housing demand reduces new construction activity"
+    },
+    {
+      "from": "CONSTRUCTION_DECLINE",
+      "to": "UNEMPLOYMENT_RISE",
+      "direction": "negative",
+      "strength": 0.75,
+      "probability": 0.80,
+      "lag_days": 60,
+      "domain": "labor",
+      "description": "Construction slowdown causes significant blue-collar job losses"
+    },
+    {
+      "from": "SOCIAL_UNREST_RISK",
+      "to": "POLITICAL_INSTABILITY",
+      "direction": "negative",
+      "strength": 0.70,
+      "probability": 0.72,
+      "lag_days": 90,
+      "domain": "geopolitics",
+      "description": "Social unrest undermines governance and political stability"
+    },
+    {
+      "from": "POLITICAL_INSTABILITY",
+      "to": "FOREIGN_INVESTMENT_DECLINE",
+      "direction": "negative",
+      "strength": 0.78,
+      "probability": 0.82,
+      "lag_days": 60,
+      "domain": "finance",
+      "description": "Political instability deters foreign direct investment"
+    },
+    {
+      "from": "FOREIGN_INVESTMENT_DECLINE",
+      "to": "CURRENCY_DEPRECIATION",
+      "direction": "negative",
+      "strength": 0.70,
+      "probability": 0.75,
+      "lag_days": 90,
+      "domain": "finance",
+      "description": "Capital outflows weaken the domestic currency"
+    },
+    {
+      "from": "CURRENCY_DEPRECIATION",
+      "to": "IMPORT_COSTS_RISE",
+      "direction": "negative",
+      "strength": 0.82,
+      "probability": 0.87,
+      "lag_days": 30,
+      "domain": "economics",
+      "description": "A weaker currency makes imported goods more expensive"
+    },
+    {
+      "from": "IMPORT_COSTS_RISE",
+      "to": "INFLATION_RISE",
+      "direction": "negative",
+      "strength": 0.70,
+      "probability": 0.78,
+      "lag_days": 30,
+      "domain": "economics",
+      "description": "Higher import prices feed directly into consumer inflation"
+    },
+    {
+      "from": "AUTOMOTIVE_PRODUCTION_DECLINE",
+      "to": "MANUFACTURING_COSTS_RISE",
+      "direction": "negative",
+      "strength": 0.68,
+      "probability": 0.72,
+      "lag_days": 60,
+      "domain": "economics",
+      "description": "Lower vehicle production volumes raise per-unit manufacturing costs"
+    },
+    {
+      "from": "HEALTHCARE_COSTS_RISE",
+      "to": "GOVERNMENT_REVENUE_DECLINE",
+      "direction": "negative",
+      "strength": 0.60,
+      "probability": 0.65,
+      "lag_days": 180,
+      "domain": "economics",
+      "description": "Ballooning public healthcare spending constrains government budgets"
+    },
+    {
+      "from": "RURAL_POVERTY_RISE",
+      "to": "SOCIAL_UNREST_RISK",
+      "direction": "negative",
+      "strength": 0.65,
+      "probability": 0.70,
+      "lag_days": 120,
+      "domain": "geopolitics",
+      "description": "Widespread rural poverty increases social grievances and unrest risk"
+    },
+    {
+      "from": "RETAIL_REVENUE_DECLINE",
+      "to": "UNEMPLOYMENT_RISE",
+      "direction": "negative",
+      "strength": 0.68,
+      "probability": 0.72,
+      "lag_days": 90,
+      "domain": "labor",
+      "description": "Falling retail revenues lead to store closures and job cuts"
+    }
+  ]
+}
