@@ -263,10 +263,6 @@ python-levenshtein
 
 ---
 
-## License
-
-MIT
-
 ---
 
 *Built by Saran Adhith*
